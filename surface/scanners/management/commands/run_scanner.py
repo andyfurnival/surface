@@ -15,7 +15,7 @@ from logbasecommand.base import LogBaseCommand
 from scanners import models
 from scanners import utils
 from scanners.inputs.base import query as input_query
-
+import socket
 
 class Command(LogBaseCommand):
     help = 'Run a scanner.'
@@ -32,23 +32,30 @@ class Command(LogBaseCommand):
         parser.add_argument('scanner', metavar='SCANNER', help='Scanner name', nargs='?')
 
     def prepare_input(self, scanner, temp_dir):
+
+        container_hostname = socket.gethostname()
         count = 0
         of = temp_dir / 'input.txt'
         _m = input_query
         _inp = scanner.input
+        self.log(f'prepare_input {_inp}  [{container_hostname}]')
         with of.open('w') as fileobj:
             for item in _m(_inp)().generate():
+                self.log(f'prepare_input {count}: {item}  [{container_hostname}]')
                 fileobj.write(item)
                 fileobj.write('\n')
                 count += 1
         return of, count
 
     def prepare_input_tar(self, scanner, scanner_args, temp_dir):
+
+        container_hostname = socket.gethostname()
+
         tar_name = temp_dir / 'input.tgz'
         with tarfile.open(tar_name, 'w:gz') as tar:
             _in, inp_count = self.prepare_input(scanner, temp_dir)
             if os.stat(_in).st_size == 0:
-                self.log(f'Skipping {scanner.scanner_name} with empty input file')
+                self.log(f'Skipping {scanner.scanner_name} with empty input file [{container_hostname}]')
                 return
             scanner_args.append('/input/input.txt')
             tar.add(_in, arcname='input/input.txt')

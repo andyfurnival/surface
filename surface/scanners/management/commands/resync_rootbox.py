@@ -190,6 +190,7 @@ class Command(LogBaseCommand):
 
                 shutil.rmtree(tempdir)
 
+                self.logger.info('resync_rootbox handle %s',rootbox.name)
             db.close_old_connections()
             if options['run_once']:
                 break

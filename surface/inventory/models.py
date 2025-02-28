@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.contenttypes import models as ct_models
 from django.core import checks
 
-
+import socket
 class Person(models.Model):
     name = models.CharField(max_length=128)
 
@@ -80,12 +80,14 @@ class Finding(models.Model):
 
     @classmethod
     def check(cls, **kwargs):
+        container_hostname = socket.gethostname()
+
         errors = super().check(**kwargs)
         errors.extend(
             [
                 checks.Warning(
                     'deprecated model',
-                    hint='Deprecation Warning: Migrate inventory.Finding data to vuln.Finding instead. inventory.Finding will be decommissioned in Surface 2.0',
+                    hint=f'Deprecation Warning: Migrate inventory.Finding data to vuln.Finding instead. inventory.Finding will be decommissioned in Surface 2.0 [{container_hostname}]',
                     obj=cls,
                     id='inventory.W001',
                 )

@@ -14,6 +14,11 @@ from pathlib import Path
 
 import ppbenviron
 
+import socket
+
+host = socket.gethostname()
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -205,33 +210,35 @@ LOGGING = {
     "filters": {
         "require_debug_false": {"()": "django.utils.log.RequireDebugFalse"},
         "require_debug_true": {"()": "django.utils.log.RequireDebugTrue"},
+        'inject_host': {'()': 'surface.HostsFilter.HostFilter'},
+
     },
     "formatters": {
-        "verbose": {"format": "[%(asctime)s] [%(process)s] [%(levelname)s] [%(name)s] %(message)s"},
-        "minimal": {"format": "[%(levelname)s] [%(name)s] %(message)s"},
+        "verbose": {"format": "[%(asctime)s] [%(process)s] [%(levelname)s] [%(name)s] %(message)s [Host: %(host)s]"},
+        "minimal": {"format": "[%(levelname)s] [%(name)s] %(message)s [Host: %(host)s]"},
     },
     "handlers": {
         "console": {
             "level": "INFO",
-            "filters": ["require_debug_false"],
+            "filters": ["require_debug_false", "inject_host"],
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
         "console_debug": {
             "level": "DEBUG",
-            "filters": ["require_debug_true"],
+            "filters": ["require_debug_true", "inject_host"],
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
         "console_minimal": {
             "level": "INFO",
-            "filters": ["require_debug_false"],
+            "filters": ["require_debug_false", "inject_host"],
             "class": "logging.StreamHandler",
             "formatter": "minimal",
         },
         "console_debug_minimal": {
             "level": "DEBUG",
-            "filters": ["require_debug_true"],
+            "filters": ["require_debug_true", "inject_host"],
             "class": "logging.StreamHandler",
             "formatter": "minimal",
         },

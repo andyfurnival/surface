@@ -72,7 +72,10 @@ class Baseline(BaseParser):
         return rec
 
     def _parse_file(self, rootbox, scanner, filepath):
-        baseline_data = json.loads(filepath.read_text())
+        output = filepath.read_text()
+
+        logger.info('Output file %s', output)
+        baseline_data = json.loads(output)
         obj = self._find_host_record(baseline_data['domain'])
         if obj is None:
             return
