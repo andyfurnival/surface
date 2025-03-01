@@ -255,5 +255,25 @@ LOGGING = {
     },
 }
 
+# Deployment indicator
+DEPLOYED = ENV_VAR("DEPLOYED", default=False)
+
+# Scheduling strategy
+#dkron, kubernetes or eventbridge
+SCHEDULING_STRATEGY = ENV_VAR('SCHEDULING_STRATEGY', default='eventbridge')
+
+# Kubernetes settings
+K8S_IMAGE = ENV_VAR('K8S_IMAGE', default='surface-scanner:latest')
+
+# AWS settings
+AWS_REGION = ENV_VAR('AWS_REGION', default='us-east-1')
+AWS_ACCOUNT_ID = ENV_VAR('AWS_ACCOUNT_ID', default='your-account-id')
+ECS_CLUSTER = ENV_VAR('ECS_CLUSTER', default='surface-cluster')
+ECS_TASK_DEFINITION = ENV_VAR('ECS_TASK_DEFINITION', default='surface-scanner-task:latest')
+ECS_SUBNET_IDS = ENV_VAR('ECS_SUBNET_IDS', default='subnet-1,subnet-2').split(',')
+ECS_SECURITY_GROUP_IDS = ENV_VAR('ECS_SECURITY_GROUP_IDS', default='sg-1').split(',')
+ECS_EVENT_ROLE_ARN = ENV_VAR('ECS_EVENT_ROLE_ARN', default='arn:aws:iam::your-account-id:role/ecs-event-role')
+
 TITLE = "Surface"
 VERSION = "dev"
+

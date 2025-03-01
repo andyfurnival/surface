@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from logging import exception
 
 from django import forms
 from django.contrib.admin.templatetags.admin_urls import admin_urlname
@@ -14,8 +15,7 @@ from django.contrib.admin.utils import unquote
 from django.core.exceptions import PermissionDenied
 from django.utils.text import capfirst
 from django.urls import reverse
-
-from dkron.utils import run_async
+from .scheduling import get_scheduler
 from scanners import models, utils
 from core_utils.admin_filters import DefaultFilterMixin
 
@@ -157,23 +157,33 @@ class ScannerAdmin(admin.ModelAdmin):
     actions = ['run_scanner']
     form = ScannerAdminForm
 
+
+
     def run_scanner(self, request, queryset):
         for obj in queryset:
-            x = run_async('run_scanner', obj.scanner_name)
-            if x is None:
+            scheduler = get_scheduler()  # Get the configured strategy
+
+            try:
+                x = scheduler.run_async('run_scanner', obj.scanner_name)
+                if x is None:
+                    self.message_user(
+                        request, format_html('Scanner {} launching', obj.scanner_name), level=messages.SUCCESS
+                    )
+                else:
+                    self.message_user(
+                        request,
+                        format_html(
+                            'Scanner {} launching, check log <a href="{}" target="_blank" rel="noopener">here</a>',
+                            obj.scanner_name,
+                            x[1],
+                        ),
+                        level=messages.SUCCESS,
+                    )
+            except Exception:
                 self.message_user(
-                    request, format_html('Scanner {} launching', obj.scanner_name), level=messages.SUCCESS
+                    request, format_html('Scanner {} failed to launch', obj.scanner_name), level=messages.ERROR
                 )
-            else:
-                self.message_user(
-                    request,
-                    format_html(
-                        'Scanner {} launching, check log <a href="{}" target="_blank" rel="noopener">here</a>',
-                        obj.scanner_name,
-                        x[1],
-                    ),
-                    level=messages.SUCCESS,
-                )
+
 
     run_scanner.short_description = 'Run this scanner...'
 
