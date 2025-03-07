@@ -40,7 +40,7 @@ class Command(LogBaseCommand):
         )
 
     def run_helper(self, rootbox, command, remove=True, **kwargs):
-        docker = utils.get_docker_client(rootbox.ip, port=rootbox.dockerd_port, use_tls=rootbox.dockerd_tls)
+        docker = utils.get_docker_client(rootbox.ip, port=rootbox.dockerd_port, tls=rootbox.dockerd_tls)
         try:
             out = docker.containers.run(self._helper, command=command, remove=remove, **kwargs)
         except Exception:
@@ -55,7 +55,7 @@ class Command(LogBaseCommand):
         return out[5:]
 
     def _process_files(self, rootbox, tempdir):
-        docker = utils.get_docker_client(rootbox.ip, port=rootbox.dockerd_port, use_tls=rootbox.dockerd_tls)
+        docker = utils.get_docker_client(rootbox.ip, port=rootbox.dockerd_port, tls=rootbox.dockerd_tls)
 
         # download tarball with files from docker host
         c = docker.containers.create(

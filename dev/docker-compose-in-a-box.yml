@@ -17,12 +17,14 @@ x-env: &env
     SURF_DKRON_URL: http://dkron:8888/
     SURF_DKRON_BIN_DIR: /surface/dev/dkronlinux
     SURF_DKRON_NODE_NAME: surfdkron
-
+    SCHEDULING_STRATEGY: dkron
 x-surf: &surf
   <<: *env
   build:
     context: ..
-    dockerfile: dev/Dockerfile-IN-A-BOX
+    args:
+      - SCHEDULING_STRATEGY=dkron
+    dockerfile: dev/Dockerfile
   working_dir: /surface/surface
   depends_on:
     - mysql
@@ -41,7 +43,8 @@ services:
   dkron:
     <<: *surf
     command: ./manage.py run_dkron -s
-  
+    ports:
+      - 8888:8888
   resync-rootbox:
     <<: *surf
     command: ./manage.py resync_rootbox
@@ -87,7 +90,8 @@ services:
       DOCKER_TLS_CERTDIR: ''
     command: --tls=false
     privileged: true
-
+    ports:
+      - 22375:2375
 
 volumes:
   mysql_data: {}

@@ -16,7 +16,7 @@ from jsoneditor.forms import JSONEditor
 
 from core_utils.admin_filters import DefaultFilterMixin
 from core_utils.utils import admin_reverse
-from dkron.utils import run_async
+from scheduler.scheduling import get_scheduler
 from inventory.models import GitSource
 from sca import models
 from sca.utils import only_highest_version_dependencies
@@ -313,10 +313,12 @@ class SCAProjectAdmin(admin.ModelAdmin):
             return
 
         try:
+            scheduler = get_scheduler()  # Get the configured strategy
             if dependencies:
-                run_async("renovate_dependencies", git_source.repo_url, dependencies=dependencies)
+                scheduler.run_async("renovate_dependencies", git_source.repo_url, dependencies=dependencies)
             else:
-                run_async("renovate_dependencies", git_source.repo_url)
+                scheduler.run_async("renovate_dependencies", git_source.repo_url)
+
             messages.success(
                 request,
                 f"Renovate was just called for {git_source.repo_url}. A new Merge/Pull Request will be created.",

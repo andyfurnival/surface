@@ -1,0 +1,3 @@
+# for the scheduling strategy of dKRON
+#ßdjango-dkron==1.1.1
+-e ../../django-dkron/

@@ -1,0 +1,2 @@
+# for the scheduling strategy of K8S or EventBridge
+kubernetes>=28.1.0

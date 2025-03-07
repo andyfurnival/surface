@@ -111,7 +111,7 @@ class Command(LogBaseCommand):
             vault_secrets = client.read(f'tla_surf/common/scanners/{scanner.scanner_name}')['data']
             env_vars.update(vault_secrets)
 
-        docker = utils.get_docker_client(rootbox.ip, rootbox.dockerd_port, use_tls=rootbox.dockerd_tls)
+        docker = utils.get_docker_client(rootbox.ip, rootbox.dockerd_port, tls=rootbox.dockerd_tls)
 
         cont_name = f'scanner-{ settings.AVZONE }-{ scanner.id }-{ scanner.image.name }-'
         if options['check'] and self.check_running(docker, cont_name):

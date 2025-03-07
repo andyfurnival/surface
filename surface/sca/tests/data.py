@@ -394,7 +394,7 @@ sbom_data = {
         {
             "group": "",
             "name": "requests",
-            "version": "2.31.0",
+            "version": "2.13.0",
             "purl": "pkg:pypi/requests@2.31.0",
             "type": "library",
             "bom-ref": "pkg:pypi/requests@2.31.0",
@@ -1396,7 +1396,7 @@ sbom_data = {
             "ref": "pkg:pypi/jira@3.5.0",
             "dependsOn": [
                 "pkg:pypi/defusedxml@0.8.0rc2",
-                "pkg:pypi/packaging@23.2",
+                "pkg:pypi/packaging@16.8",
                 "pkg:pypi/requests-oauthlib@1.3.1",
                 "pkg:pypi/requests-toolbelt@1.0.0",
                 "pkg:pypi/typing-extensions@4.10.0",

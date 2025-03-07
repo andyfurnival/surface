@@ -1,0 +1,2 @@
+# for the scheduling strategy of EventBridge
+boto3>=1.34.0

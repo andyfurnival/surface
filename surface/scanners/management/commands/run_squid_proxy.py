@@ -40,7 +40,7 @@ class Command(LogBaseCommand):
             return c
 
         for rootbox in boxes:
-            docker = utils.get_docker_client(rootbox.ip, rootbox.dockerd_port, use_tls=rootbox.dockerd_tls)
+            docker = utils.get_docker_client(rootbox.ip, rootbox.dockerd_port, tls=rootbox.dockerd_tls)
             try:
                 docker.images.pull(settings.SCANNERS_PROXY_IMAGE, settings.SCANNERS_PROXY_IMAGE_TAG)
             except APIError as e:

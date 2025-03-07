@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from logging import exception
 
 from django import forms
 from django.contrib.admin.templatetags.admin_urls import admin_urlname
@@ -15,10 +14,15 @@ from django.contrib.admin.utils import unquote
 from django.core.exceptions import PermissionDenied
 from django.utils.text import capfirst
 from django.urls import reverse
-from .scheduling import get_scheduler
 from scanners import models, utils
 from core_utils.admin_filters import DefaultFilterMixin
+from scheduler.models import Task
+from django.conf import settings
 
+#laxy loading schedule to avoid early import issues
+def get_scheduler():
+    from scheduler.scheduling import get_scheduler as scheduler_func
+    return scheduler_func()
 
 class FinalHTTPFilter(SimpleListFilter):
     title = 'Final HTTP'
@@ -160,29 +164,67 @@ class ScannerAdmin(admin.ModelAdmin):
 
 
     def run_scanner(self, request, queryset):
-        for obj in queryset:
-            scheduler = get_scheduler()  # Get the configured strategy
+        scheduler = get_scheduler()
+        for scanner in queryset:
+            # Create or reuse a Task for this scanner
+            task_name = f"scanner-{scanner.scanner_name}"
+            cmd = f"python manage.py run_scanner {scanner.scanner_name}"
+            image = scanner.image.image if scanner.image else settings.SCHEDULER_TASK_IMAGE  # Capture image
+            container_name = scanner.image.name if scanner.image.name else scanner.name
+            if getattr(settings, 'SCHEDULING_STRATEGY', 'dkron') == 'dkron':
+                try:
 
-            try:
-                x = scheduler.run_async('run_scanner', obj.scanner_name)
-                if x is None:
-                    self.message_user(
-                        request, format_html('Scanner {} launching', obj.scanner_name), level=messages.SUCCESS
+                    job_name, job_link = scheduler.run_async(
+                        'run_scanner',
+                        scanner.scanner_name,
+                        scheduler_name=f'scanner-{settings.AVZONE}-{scanner.id}-{container_name}-',
+                        image=image,
+                        docker_ip=scanner.rootbox.ip,  # Pass dynamic endpoint details
+                        docker_port=scanner.rootbox.dockerd_port,
+                        docker_tls=scanner.rootbox.dockerd_tls
                     )
-                else:
-                    self.message_user(
-                        request,
-                        format_html(
-                            'Scanner {} launching, check log <a href="{}" target="_blank" rel="noopener">here</a>',
-                            obj.scanner_name,
-                            x[1],
-                        ),
-                        level=messages.SUCCESS,
+                    if job_name is None:
+                        self.message_user(
+                            request, format_html('Scanner {} launching', scanner.scanner_name), level=messages.SUCCESS
+                        )
+                    else:
+                        self.message_user(
+                            request,
+                            format_html(
+                                'Scanner {} launching, check log <a href="{}" target="_blank" rel="noopener">here</a>',
+                                scanner.scanner_name,
+                                job_link,
+                            ),
+                            level=messages.SUCCESS,
+                        )
+
+                    self.message_user(request, f'Scanner "{job_name}"started', level=messages.SUCCESS)
+                except ImportError:
+                    self.message_user(request, "dKron not available", level=messages.ERROR)
+                    return
+            else:
+                try:
+
+                    task, created = Task.objects.get_or_create(
+                        name=task_name,
+                        defaults={'command': cmd, 'enabled': True}
                     )
-            except Exception:
-                self.message_user(
-                    request, format_html('Scanner {} failed to launch', obj.scanner_name), level=messages.ERROR
-                )
+                    image = task.image if task.image else scanner.image.name
+                    image = scanner.image.image if image else settings.SCHEDULER_TASK_IMAGE  # Capture image
+                    container_name = scanner.image.name if scanner.image.name else task.image
+                    job_name, job_link = scheduler.run_async(
+                        'run_scanner',
+                        task.command.split(),
+                        scheduler_name=f'scanner-{settings.AVZONE}-{scanner.id}-{container_name}-',
+                        image=image,
+                        docker_ip=scanner.rootbox.ip,  # Pass dynamic endpoint details
+                        docker_port=scanner.rootbox.dockerd_port,
+                        docker_tls=scanner.rootbox.dockerd_tls
+
+                    )
+                    self.message_user(request, f"Scan '{scanner.scanner_name}' triggered: {job_link}")
+                except Exception as e:
+                    self.message_user(request, f"Error triggering '{scanner.scanner_name}': {str(e)}", level='error')
 
 
     run_scanner.short_description = 'Run this scanner...'

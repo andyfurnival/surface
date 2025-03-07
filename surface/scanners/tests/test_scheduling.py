@@ -1,7 +1,7 @@
 import unittest
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 from django.test import TestCase
-from scanners.scheduling import (
+from scheduler.scheduling import (
     DkronSchedulingStrategy,
     KubernetesSchedulingStrategy,
     EventBridgeSchedulingStrategy,
@@ -52,7 +52,7 @@ class TestSchedulingStrategies(TestCase):
     @patch('scanners.scheduling.KUBERNETES_AVAILABLE', False)
     @patch('subprocess.Popen')
     def test_kubernetes_strategy_deployed_no_module(self, mock_popen):
-        with self.settings(DEPLOYED=True, K8S_IMAGE='test-image:latest'):
+        with self.settings(DEPLOYED=True, SCHEDULER_TASK_IMAGE='test-image:latest'):
             strategy = KubernetesSchedulingStrategy()
             self.assertFalse(strategy.deployed)
             job_name, job_link = strategy.run_async(self.cmd_name, *self.args, **self.kwargs)
@@ -64,7 +64,7 @@ class TestSchedulingStrategies(TestCase):
 
     @patch('scanners.scheduling.KUBERNETES_AVAILABLE', True)
     def test_kubernetes_strategy_deployed_with_module(self):
-        with self.settings(DEPLOYED=True, K8S_IMAGE='test-image:latest'):
+        with self.settings(DEPLOYED=True, SCHEDULER_TASK_IMAGE='test-image:latest'):
             try:
                 from kubernetes import client, config
                 kubernetes_available = True

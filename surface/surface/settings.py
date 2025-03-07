@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 from pathlib import Path
 
 import ppbenviron
-
+from django.core.exceptions import ImproperlyConfigured
 import socket
 
 host = socket.gethostname()
@@ -24,6 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 ENV_VAR = ppbenviron.CustomEnv()
 ENV_VAR.read_env(BASE_DIR / "local.env")
+
+# Scheduling strategy
+#dkron, kubernetes or eventbridge
+SCHEDULING_STRATEGY = ENV_VAR('SCHEDULING_STRATEGY', default='')
 
 # Application definition
 
@@ -37,7 +41,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "impersonate",
     "surfapp",
-    "dkron",
     "notifications",
     "slackbot",
     "dbcleanup",
@@ -51,7 +54,23 @@ INSTALLED_APPS = [
     "sca",
     "sbomrepo",
     "jsoneditor",
+    "scheduler",
 ]
+if SCHEDULING_STRATEGY == 'dkron':
+    try:
+        import dkron
+        INSTALLED_APPS.append('dkron')
+    except ImportError as e:
+        import sys
+
+        print(f"Python path: {sys.path}")
+        print(f"Installed modules: {sys.modules.keys()}")
+        raise ImproperlyConfigured(
+            f"SCHEDULING_STRATEGY is set to 'dkron', but 'django-dkron' is not available. "
+            f"Original error: {str(e)}"
+        )
+
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -160,6 +179,10 @@ SCANNERS_DOCKER_CLIENT_KEY_PATH = ENV_VAR("SURF_SCANNERS_DOCKER_CLIENT_KEY_PATH"
 SCANNERS_DOCKER_CLIENT_CERT = ENV_VAR("SURF_SCANNERS_DOCKER_CLIENT_CERT", default="")
 SCANNERS_DOCKER_CLIENT_CERT_PATH = ENV_VAR("SURF_SCANNERS_DOCKER_CLIENT_CERT_PATH", default="")
 
+#added webhook URL which is used for Scheduler strategy
+SURFACE_WEBHOOK_URL = ENV_VAR("SURF_WEBHOOK_URL", default="http://localhost:8888/")
+SURFACE_WEBHOOK_TOKEN = ENV_VAR('SURF_WEBHOOK_TOKEN', default='your-secret-token')
+
 DKRON_URL = ENV_VAR("SURF_DKRON_URL", default="http://localhost:8888/")
 # used for authenticating dkron webhook calls (first line in payload)
 DKRON_TOKEN = ENV_VAR("SURF_DKRON_TOKEN", default=None)
@@ -175,6 +198,7 @@ DKRON_VERSION = ENV_VAR("SURF_DKRON_VERSION", default="3.1.10")
 DKRON_WEBHOOK_URL = ENV_VAR("SURF_DKRON_WEBHOOK_URL", default=None)
 DKRON_NAMESPACE = ENV_VAR("SURF_DKRON_NAMESPACE", default=None)
 DKRON_NODE_NAME = ENV_VAR("SURF_DKRON_NODE_NAME", default=None)
+DKRON_PATH = DKRON_URL
 
 # settings docs in https://github.com/surface-security/django-notification-sender#readme
 NOTIFICATIONS_SLACK_APP_TOKEN = ENV_VAR("SURF_NOTIFICATIONS_SLACK_APP_TOKEN", default=None)
@@ -258,12 +282,8 @@ LOGGING = {
 # Deployment indicator
 DEPLOYED = ENV_VAR("DEPLOYED", default=False)
 
-# Scheduling strategy
-#dkron, kubernetes or eventbridge
-SCHEDULING_STRATEGY = ENV_VAR('SCHEDULING_STRATEGY', default='eventbridge')
-
 # Kubernetes settings
-K8S_IMAGE = ENV_VAR('K8S_IMAGE', default='surface-scanner:latest')
+SCHEDULER_TASK_IMAGE = ENV_VAR('SCHEDULER_TASK_IMAGE', default='surface-scanner:latest')
 
 # AWS settings
 AWS_REGION = ENV_VAR('AWS_REGION', default='us-east-1')

@@ -16,10 +16,19 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
-
+from django.conf import settings
+import os
 urlpatterns = [
     path("", include(("theme.urls", "theme"), namespace="surface_theme")),
-    path("dkron/", include("dkron.urls")),
     path("sbomrepo/", include("sbomrepo.urls")),
+    path("scheduler/", include("scheduler.urls")),
     path("", admin.site.urls),
 ]
+
+SCHEDULING_STRATEGY = getattr(settings, 'SCHEDULING_STRATEGY', os.getenv('SCHEDULING_STRATEGY', 'dkron'))
+if SCHEDULING_STRATEGY == 'dkron':
+    try:
+        urlpatterns.append(path("dkron/", include("dkron.urls")))
+    except ImportError:
+        # Silently skip if django-dkron isn’t installed, or raise an error if dkron is required
+        pass  # Or: raise ImproperlyConfigured("SCHEDULING_STRATEGY='dkron' requires django-dkron")
