@@ -13,23 +13,30 @@ x-env: &env
   env_file:
     - ../surface/local.env
   environment:
-    SURF_DATABASE_URL: mysql://root:@mysql/surface
+    SURF_DATABASE_URL: mysql://root:@mysql/surface_full
     SURF_DKRON_URL: http://dkron:8888/
     SURF_DKRON_BIN_DIR: /surface/dev/dkronlinux
     SURF_DKRON_NODE_NAME: surfdkron
     SCHEDULING_STRATEGY: dkron
+    SURF_CSRF_TRUSTED_ORIGINS: http://localhost:8001
+    SURF_OPENSEARCH_INDEX_NAME: surface-security
+    SURF_DKRON_VERSION: 3.1.10
+    SURF_OLYMPUS_STRATEGY_TYPE: firehose
+
+#    SURF_ALLOWED_HOSTS: localhost","http://localhost:8080
 x-surf: &surf
   <<: *env
-  build:
-    context: ..
-    args:
-      - SCHEDULING_STRATEGY=dkron
-    dockerfile: dev/Dockerfile
-  working_dir: /surface/surface
+#  build:
+#    context: ..
+#    args:
+#      - SCHEDULING_STRATEGY=dkron
+#    dockerfile: dev/Dockerfile
+#  working_dir: /surface/surface
+  image: ghcr.io/fips-surface-security:latest
   depends_on:
     - mysql
-  volumes:
-    - ..:/surface
+#  volumes:
+#    - ..:/surface
   deploy:
     restart_policy:
       condition: on-failure
@@ -38,11 +45,14 @@ x-surf: &surf
 services:
   surface:
     <<: *surf
-    command: ./manage.py runserver 0.0.0.0:8000
-
+#    command: ./manage.py runserver 0.0.0.0:8000
+#    command: 'app'
+    entrypoint: ./manage.py runserver 0.0.0.0:8000
+    ports:
+      - 8080:8000
   dkron:
     <<: *surf
-    command: ./manage.py run_dkron -s
+    entrypoint: ./manage.py run_dkron -s
     ports:
       - 8888:8888
   resync-rootbox:
@@ -56,14 +66,15 @@ services:
     image: ghcr.io/surface-security/nginx:latest
     environment:
       # add proper ALLOWED_HOSTS if production (or remove if already defined in an local.env)
-      SURF_ALLOWED_HOSTS: '*'
-      NGINX_APP_IP: surface
-      NGINX_APP_PORT: 8000
+      SURF_ALLOWED_HOSTS: 'localhost'
+      SURFACE_APP_IP: surface
+      SURFACE_APP_PORT: 8000
+      NGINX_APP_PORT: 8001
       SURF_STATIC_ROOT: ''
     depends_on:
       - surface
     ports:
-      - 8080:8080
+      - 8001:8001
     volumes:
       - ./media:/surface/media/
       - ./nginx.template.conf:/etc/nginx/templates/default.conf.template:ro
